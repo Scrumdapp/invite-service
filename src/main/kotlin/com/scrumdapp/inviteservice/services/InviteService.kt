@@ -34,7 +34,7 @@ class InviteService(
 
         if (invite.token != token) throw UnauthorizedException("Invalid token")
         if (!invite.isActive) throw BadRequestException("Invite is no longer active")
-        if (invite.expiresAt.isBefore(LocalDateTime.now())) throw BadRequestException("Invite has expired")
+        if (invite.expiresAt.isBefore(LocalDateTime.now())) throw BadRequestException("Invite has expired, ask for a new one!")
 
         return invite.toResponseDto()
     }
@@ -45,7 +45,7 @@ class InviteService(
 
         if (invite.token != dto.token) throw UnauthorizedException("Invalid token")
         if (!invite.isActive) throw BadRequestException("Invite is no longer active")
-        if (invite.expiresAt.isBefore(LocalDateTime.now())) throw BadRequestException("Invite has expired")
+        if (invite.expiresAt.isBefore(LocalDateTime.now())) throw BadRequestException("Invite has expired, ask for a new one!")
         if (!encoder.matches(dto.password, invite.passwordHash)) throw UnauthorizedException("Invalid password")
     }
 
