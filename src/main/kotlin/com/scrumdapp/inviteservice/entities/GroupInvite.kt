@@ -1,7 +1,6 @@
 package com.scrumdapp.inviteservice.entities
 
 import jakarta.persistence.*
-import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -24,10 +23,10 @@ class GroupInvite {
     var passwordHash: String = ""
 
     @Column(nullable = false)
-    var createdAt: LocalDate = LocalDate.MIN
+    var createdAt: LocalDateTime = LocalDateTime.now()
 
     @Column(nullable = false)
-    var expiresAt: Int = 0
+    var expiresAt: LocalDateTime = LocalDateTime.now().plusDays(1)
 
     @Column(nullable = false)
     var isActive: Boolean = true
