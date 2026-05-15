@@ -1,4 +1,4 @@
-package com.scrumdapp.inviteservice.exceptions
+package com.scrumdapp.inviteservice.dto
 
 import com.fasterxml.jackson.annotation.JsonInclude
 
