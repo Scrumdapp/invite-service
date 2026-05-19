@@ -55,8 +55,8 @@ class InviteService(
             .orElseThrow { NotFoundException("Invite not found") }
 
         if (invite.token != dto.token) throw UnauthorizedException("Invalid token")
-        if (!invite.isActive) throw BadRequestException("Invite is no longer active")
-        if (invite.expiresAt.isBefore(LocalDateTime.now())) throw BadRequestException("Invite has expired")
+        if (!invite.isActive) throw BadRequestException("Ïnvite has been deactivated or has expired")
+        if (invite.expiresAt.isBefore(LocalDateTime.now())) throw BadRequestException("Ïnvite has been deactivated or has expired")
         if (!encryptionService.matches(dto.password, invite.passwordHash)) throw UnauthorizedException("Invalid password")
 
         val users = restClient.get()
