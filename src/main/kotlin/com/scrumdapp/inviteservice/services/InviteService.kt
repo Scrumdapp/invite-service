@@ -2,7 +2,6 @@ package com.scrumdapp.inviteservice.services
 
 import com.scrumdapp.inviteservice.dto.AcceptInviteDto
 import com.scrumdapp.inviteservice.dto.CreateInviteDto
-import com.scrumdapp.inviteservice.dto.GroupUserResponseDto
 import com.scrumdapp.inviteservice.dto.InviteResponseDto
 import com.scrumdapp.inviteservice.exceptions.BadRequestException
 import com.scrumdapp.inviteservice.exceptions.ForbiddenException
@@ -15,6 +14,7 @@ import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import org.springframework.web.client.RestClient
 import org.springframework.http.MediaType
+import org.springframework.beans.factory.annotation.Value
 
 @Service
 class InviteService(
@@ -22,6 +22,10 @@ class InviteService(
     private val encryptionService: EncryptionService
 ) {
     private val restClient = RestClient.create()
+
+    @Value("\${group.service.url}")
+    private lateinit var groupServiceUrl: String
+
     fun create(groupId: Int, dto: CreateInviteDto, userRole: String): InviteResponseDto {
         if (userRole != "docent") throw ForbiddenException("Only teachers can create invites")
 
@@ -50,7 +54,7 @@ class InviteService(
         return invite.toResponseDto()
     }
 
-    fun accept(inviteId: Int, dto: AcceptInviteDto, authorization: String) {
+    fun accept(inviteId: Int, dto: AcceptInviteDto, authorization: String): Boolean {
         val invite = groupInviteRepository.findById(inviteId)
             .orElseThrow { NotFoundException("Invite not found") }
 
@@ -59,22 +63,17 @@ class InviteService(
         if (invite.expiresAt.isBefore(LocalDateTime.now())) throw BadRequestException("Ïnvite has been deactivated or has expired")
         if (!encryptionService.matches(dto.password, invite.passwordHash)) throw UnauthorizedException("Invalid password")
 
-        val users = restClient.get()
-            .uri("http://localhost:3001/groups/${invite.groupId}/users")
-            .header("Authorization", authorization)
-            .retrieve()
-            .body(Array<GroupUserResponseDto>::class.java)
-
-        val alreadyInGroup = users?.any { it.userId == dto.userId.toLong() }
-        if (alreadyInGroup == true) throw BadRequestException("User is already part of this group")
-
-        restClient.post()
-            .uri("http://localhost:3001/groups/${invite.groupId}/users")
+        val response = restClient.post()
+            .uri("$groupServiceUrl/groups/${invite.groupId}/users")
             .contentType(MediaType.APPLICATION_JSON)
             .header("Authorization", authorization)
             .body(mapOf("userId" to dto.userId))
             .retrieve()
+            .onStatus({ it.is4xxClientError }) { _, response ->
+                throw BadRequestException("Could not add user to group")
+            }
             .toBodilessEntity()
+        return true
     }
 
     fun delete(inviteId: Int, userRole: String) {
