@@ -7,6 +7,9 @@ import com.scrumdapp.inviteservice.services.InviteService
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
+import com.scrumdapp.passportplugin.annotations.Passport
+import com.scrumdapp.passportplugin.jwt.PassportContent
+import org.springframework.security.access.prepost.PreAuthorize
 
 @RestController
 @RequestMapping("/invites")
@@ -14,23 +17,26 @@ class InviteController(
     private val inviteService: InviteService
 ) {
     @GetMapping("/")
+    @PreAuthorize("hasRole('COACH')")
     fun getByGroup(
         @RequestParam("group") groupId: Int,
-        @RequestHeader("Role") userRole: String
+        @Passport passport: PassportContent
     ): List<InviteResponseDto> {
-        return inviteService.getByGroup(groupId, userRole)
+        return inviteService.getByGroup(groupId, passport)
     }
 
     @PostMapping("/")
+    @PreAuthorize("hasRole('COACH')")
     fun create(
         @RequestParam("group") groupId: Int,
         @RequestBody @Valid dto: CreateInviteDto,
-        @RequestHeader("Role") userRole: String
+        @Passport userRole: PassportContent
     ): InviteResponseDto {
         return inviteService.create(groupId, dto, userRole)
     }
 
     @GetMapping("/{inviteId}")
+    @PreAuthorize("hasRole('COACH')")
     fun getById(
         @PathVariable inviteId: Int,
         @RequestParam token: String
@@ -49,11 +55,12 @@ class InviteController(
     }
 
     @DeleteMapping("/{inviteId}")
+    @PreAuthorize("hasRole('COACH')")
     fun delete(
         @PathVariable inviteId: Int,
-        @RequestHeader("Role") userRole: String
+        @Passport passport: PassportContent
     ): ResponseEntity<Void> {
-        inviteService.delete(inviteId, userRole)
+        inviteService.delete(inviteId, passport)
         return ResponseEntity.noContent().build()
     }
 }

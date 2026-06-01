@@ -15,6 +15,7 @@ import java.time.LocalDateTime
 import org.springframework.web.client.RestClient
 import org.springframework.http.MediaType
 import org.springframework.beans.factory.annotation.Value
+import com.scrumdapp.passportplugin.jwt.PassportContent
 
 @Service
 class InviteService(
@@ -26,9 +27,7 @@ class InviteService(
     @Value("\${group.service.url}")
     private lateinit var groupServiceUrl: String
 
-    fun create(groupId: Int, dto: CreateInviteDto, userRole: String): InviteResponseDto {
-        if (userRole != "docent") throw ForbiddenException("Only teachers can create invites")
-
+    fun create(groupId: Int, dto: CreateInviteDto, userRole: PassportContent): InviteResponseDto {
         val now = LocalDateTime.now()
         if (!dto.expiresAt.isAfter(now)) throw BadRequestException("expiresAt must be in the future")
         if (!dto.expiresAt.isBefore(now.plusDays(1))) throw BadRequestException("expiresAt may not be more than 1 day in the future")
@@ -38,8 +37,7 @@ class InviteService(
         return groupInviteRepository.save(invite).toResponseDto()
     }
 
-    fun getByGroup(groupId: Int, userRole: String): List<InviteResponseDto> {
-        if (userRole != "docent") throw ForbiddenException("Only teachers can view invites")
+    fun getByGroup(groupId: Int, userRole: PassportContent): List<InviteResponseDto> {
         return groupInviteRepository.findAllByGroupId(groupId).map { it.toResponseDto() }
     }
 
@@ -76,8 +74,7 @@ class InviteService(
         return true
     }
 
-    fun delete(inviteId: Int, userRole: String) {
-        if (userRole != "docent") throw ForbiddenException("Only teachers can delete invites")
+    fun delete(inviteId: Int, passport: PassportContent) {
         val invite = groupInviteRepository.findById(inviteId)
             .orElseThrow { NotFoundException("Invite not found") }
         groupInviteRepository.delete(invite)

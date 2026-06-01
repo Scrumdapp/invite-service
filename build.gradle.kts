@@ -17,9 +17,14 @@ java {
 
 repositories {
     mavenCentral()
+    maven {
+        name = "reposiliteRepositoryReleases"
+        url = uri("https://maven.pkgs.scrumdapp.com/releases")
+    }
 }
 
 dependencies {
+    implementation("com.scrumdapp:passport-plugin:0.0.1")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-validation")
