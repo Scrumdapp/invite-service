@@ -16,7 +16,7 @@ import org.springframework.security.access.prepost.PreAuthorize
 class InviteController(
     private val inviteService: InviteService
 ) {
-    @GetMapping("/")
+    @GetMapping
     @PreAuthorize("hasRole('COACH')")
     fun getByGroup(
         @RequestParam("group") groupId: Int,
@@ -25,7 +25,7 @@ class InviteController(
         return inviteService.getByGroup(groupId, passport)
     }
 
-    @PostMapping("/")
+    @PostMapping
     @PreAuthorize("hasRole('COACH')")
     fun create(
         @RequestParam("group") groupId: Int,
