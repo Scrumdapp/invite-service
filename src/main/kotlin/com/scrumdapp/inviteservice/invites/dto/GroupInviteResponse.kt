@@ -1,6 +1,6 @@
-package com.scrumdapp.inviteservice.dto
+package com.scrumdapp.inviteservice.invites.dto
 
-data class InviteResponseDto(
+data class GroupInviteResponse(
     val id: Int,
     val groupId: Int,
     val token: String,

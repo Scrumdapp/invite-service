@@ -6,7 +6,6 @@ open class AppException(
     message: String,
     val status: HttpStatus
 ) : RuntimeException(message)
-
 class NotFoundException(message: String = "Resource not found") :
     AppException(message, HttpStatus.NOT_FOUND)
 

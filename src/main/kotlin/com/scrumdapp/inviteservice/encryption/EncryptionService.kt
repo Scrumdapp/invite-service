@@ -1,4 +1,4 @@
-package com.scrumdapp.inviteservice.services
+package com.scrumdapp.inviteservice.encryption
 
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.stereotype.Service

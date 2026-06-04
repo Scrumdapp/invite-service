@@ -1,6 +1,6 @@
-package com.scrumdapp.inviteservice.repositories
+package com.scrumdapp.inviteservice.invites
 
-import com.scrumdapp.inviteservice.entities.GroupInvite
+import com.scrumdapp.inviteservice.invites.GroupInvite
 import org.springframework.data.jpa.repository.JpaRepository
 
 interface GroupInviteRepository : JpaRepository<GroupInvite, Int> {
