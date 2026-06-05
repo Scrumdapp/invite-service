@@ -8,6 +8,7 @@ import com.scrumdapp.inviteservice.invites.dto.AcceptInviteDto
 import com.scrumdapp.inviteservice.invites.dto.CreateInviteDto
 import com.scrumdapp.inviteservice.invites.dto.GroupInviteResponse
 import com.scrumdapp.inviteservice.encryption.EncryptionService
+import com.scrumdapp.inviteservice.exceptions.ServerException
 import com.scrumdapp.inviteservice.safetycodes.SafetyCodeService
 import com.scrumdapp.passportplugin.jwt.PassportContent
 import org.springframework.beans.factory.annotation.Value
@@ -43,7 +44,7 @@ class GroupInviteService(
     fun getInviteById(inviteId: Int, token: String): GroupInviteResponse {
         val invite = groupInviteRepository.findById(inviteId)
             .orElseThrow { NotFoundException("Invite not found") }
-        checkInviteValidity(invite, token)
+        validateInvite(invite, token)
         return invite.toResponseDto()
     }
 
@@ -54,16 +55,16 @@ class GroupInviteService(
         val safetyCode = safetyCodeService.createCode(invite)
 
         if (!encryptionService.matches(dto.password, invite.passwordHash)) throw UnauthorizedException("Invalid password")
-        checkInviteValidity(invite, dto.token)
+        validateInvite(invite, dto.token)
 
         val response = restClient.post()
-            .uri("$groupServiceUrl/groups/${invite.groupId}/users")
+            .uri("$groupServiceUrl/groups/${invite.groupId}/users?token=$safetyCode")
             .contentType(MediaType.APPLICATION_JSON)
             .header("Authorization", authorization)
-            .body(mapOf("userId" to userId))
+            .body(mapOf("user_id" to userId))
             .retrieve()
             .onStatus({ it.is4xxClientError }) { _, response ->
-                throw BadRequestException("Could not add user to group")
+                throw ServerException("Something went wrong adding user to group")
             }
             .toBodilessEntity()
         return true
@@ -75,7 +76,7 @@ class GroupInviteService(
         groupInviteRepository.delete(invite)
     }
 
-    private fun checkInviteValidity(invite: GroupInvite, token: String) {
+    private fun validateInvite(invite: GroupInvite, token: String) {
         if (invite.token != token) throw UnauthorizedException("Invalid token")
         if (!invite.isActive) throw ForbiddenException("Ïnvite has been deactivated or has expired")
         if (invite.expiresAt.isBefore(LocalDateTime.now())) throw ForbiddenException("Ïnvite has been deactivated or has expired")

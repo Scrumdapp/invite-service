@@ -11,7 +11,6 @@ import java.time.LocalDateTime
 class SafetyCodeService(
     private val repository: SafetyCodeRepository,
     @Value("\${safetycode.length}") private val codeLength: Int,
-    @Value("\${safetycode.lifetime}") private val lifetime: Long,
 ) {
 
     fun createCode(invite: GroupInvite): String {
@@ -26,14 +25,7 @@ class SafetyCodeService(
 
     fun validateCode(code: String): Boolean {
         val safetyCode = repository.findByCode(code) ?: return false
-        if (!safetyCode.isValid) return false
-        if (code != safetyCode.code) return false
-        if (LocalDateTime.now().isAfter(safetyCode.createdAt.plusMinutes(lifetime))) return false
-
-        safetyCode.apply {
-            isValid = false
-        }
-        repository.save(safetyCode)
+        repository.delete(safetyCode)
         return true
     }
 

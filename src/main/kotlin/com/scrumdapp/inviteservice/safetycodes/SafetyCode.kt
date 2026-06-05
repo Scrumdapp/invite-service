@@ -22,12 +22,7 @@ class SafetyCode {
     @Column(nullable = false)
     var code: String = ""
 
-    @Column(nullable = false)
-    var isValid: Boolean = true
-
     @ManyToOne
     @JoinColumn(name = "group_invite_id")
     var invite: GroupInvite = GroupInvite()
-
-    val createdAt: LocalDateTime = LocalDateTime.now()
 }

@@ -29,6 +29,7 @@ class SecurityConfig(
                     .requestMatchers(HttpMethod.GET, "/invites").hasAnyAuthority("COACH")
                     .requestMatchers(HttpMethod.POST, "/invites").hasAnyAuthority("COACH")
                     .requestMatchers(HttpMethod.DELETE, "/invites/{inviteId}").hasAnyAuthority("COACH")
+                    .requestMatchers(HttpMethod.GET, "/invites/safety").hasAnyAuthority("STUDENT", "COACH")
             }
             .exceptionHandling { ex -> ex
                 .authenticationEntryPoint(CustomAuthEntryPointHandler())
