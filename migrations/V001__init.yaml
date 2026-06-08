@@ -1,0 +1,63 @@
+operations:
+  - create_table:
+      name: group_invites
+      columns:
+        - generated:
+            identity:
+              user_specified_values: BY DEFAULT
+          name: id
+          type: int
+
+        - name: group_id
+          type: bigint
+
+        - name: token
+          type: varchar(255)
+          unique: true
+
+        - name: password_hash
+          type: varchar(255)
+
+        - name: created_at
+          type: timestamp(6)
+
+        - name: expires_at
+          type: timestamp(6)
+
+        - name: is_active
+          type: boolean
+
+      constraints:
+        - columns:
+            - id
+          name: pk_group_invites
+          type: primary_key
+  - create_table:
+      name: invite_safety_codes
+      columns:
+        - generated:
+            identity:
+              user_specified_values: BY DEFAULT
+          name: id
+          type: int
+
+        - name: code
+          type: varchar(255)
+
+        - name: group_invite_id
+          type: int
+          references:
+            name: fk_group_invite_id_on_group_invites
+            table: group_invites
+            column: id
+            on_delete: CASCADE
+            on_update: CASCADE
+
+        - name: created_at
+          type: timestamp(6)
+
+      constraints:
+        - columns:
+            - id
+          name: pk_invite_safety_code
+          type: primary_key
