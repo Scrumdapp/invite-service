@@ -25,4 +25,7 @@ class SafetyCode {
     @ManyToOne
     @JoinColumn(name = "group_invite_id")
     var invite: GroupInvite = GroupInvite()
+
+    @Column(name = "created_at", nullable = false)
+    var createdAt: LocalDateTime = LocalDateTime.now()
 }

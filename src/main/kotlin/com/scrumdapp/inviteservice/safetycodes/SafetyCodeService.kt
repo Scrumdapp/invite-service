@@ -25,6 +25,7 @@ class SafetyCodeService(
 
     fun validateCode(code: String): Boolean {
         val safetyCode = repository.findByCode(code) ?: return false
+        if (safetyCode.createdAt.plusMinutes(2).isBefore(LocalDateTime.now())) return false
         repository.delete(safetyCode)
         return true
     }

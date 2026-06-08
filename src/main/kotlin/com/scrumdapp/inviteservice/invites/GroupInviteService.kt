@@ -15,7 +15,9 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
 import org.springframework.web.client.RestClient
+import java.time.Instant
 import java.time.LocalDateTime
+import java.time.ZoneId
 
 @Service
 class GroupInviteService(
@@ -30,7 +32,11 @@ class GroupInviteService(
 
     fun createInvite(groupId: Int, dto: CreateInviteDto): GroupInviteResponse {
         val now = LocalDateTime.now()
-        dto.expiresAt?.isBefore(now.plusDays(1))?.let { if (!it) throw BadRequestException("An invite can only last for 24 hours") }
+        val parsedInstant = Instant.parse(dto.expiresAt)
+        val parsedTime = LocalDateTime.ofInstant(parsedInstant, ZoneId.systemDefault())
+
+        if (parsedTime.isBefore(now) || parsedTime.isAfter(now.plusDays(7)))
+            throw BadRequestException(message = "Expires at can only be a maximum of 7 days in the future")
 
         val passwordHash = encryptionService.encode(dto.password)
         val invite = dto.toEntity(groupId, passwordHash)

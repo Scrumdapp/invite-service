@@ -17,21 +17,21 @@ class GroupInvite {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     var id: Int = 0
 
-    @Column(nullable = false)
-    var groupId: Int = 0
+    @Column(name = "group_id", nullable = false)
+    var groupId: Long = 0
 
     @Column(nullable = false, unique = true)
     var token: String = UUID.randomUUID().toString()
 
-    @Column(nullable = false)
+    @Column(name = "password_hash", nullable = false)
     var passwordHash: String = ""
 
-    @Column(nullable = false)
+    @Column(name = "created_at", nullable = false)
     var createdAt: LocalDateTime = LocalDateTime.now()
 
-    @Column(nullable = false)
+    @Column(name = "expires_at", nullable = false)
     var expiresAt: LocalDateTime = LocalDateTime.now().plusDays(1)
 
-    @Column(nullable = false)
+    @Column(name = "is_active", nullable = false)
     var isActive: Boolean = true
 }
