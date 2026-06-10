@@ -59,7 +59,7 @@ class GroupInviteService(
         val invite = groupInviteRepository.findById(inviteId)
             .orElseThrow { NotFoundException("Invite not found") }
 
-        if (invite.expiresAt.isAfter(LocalDateTime.now())) {
+        if (invite.expiresAt.isBefore(LocalDateTime.now())) {
             throw BadRequestException("Invite has expired")
         }
 
@@ -90,6 +90,6 @@ class GroupInviteService(
     private fun validateInvite(invite: GroupInvite, token: String) {
         if (invite.token != token) throw UnauthorizedException("Invalid token")
         if (!invite.isActive) throw ForbiddenException("Ïnvite has been deactivated or has expired")
-        if (!invite.expiresAt.isBefore(LocalDateTime.now())) throw ForbiddenException("Ïnvite has been deactivated or has expired")
+        if (invite.expiresAt.isBefore(LocalDateTime.now())) throw ForbiddenException("Ïnvite has been deactivated or has expired")
     }
 }
