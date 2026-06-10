@@ -24,7 +24,7 @@ class GlobalExceptionHandler(
 
     @ExceptionHandler(Exception::class)
     fun handleGeneralException(ex: Exception): ResponseEntity<ExceptionResponse> {
-
+        println(ex)
         val body = exceptionService.mapException(ex)
         return ResponseEntity.status(body.code).body(body)
     }

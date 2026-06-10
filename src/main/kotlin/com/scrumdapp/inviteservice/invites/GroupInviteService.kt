@@ -33,14 +33,15 @@ class GroupInviteService(
     fun createInvite(groupId: Int, dto: CreateInviteDto): GroupInviteResponse {
         val now = LocalDateTime.now()
         val parsedInstant = Instant.parse(dto.expiresAt)
-        val parsedTime = LocalDateTime.ofInstant(parsedInstant, ZoneId.systemDefault())
+        val parsedTime = LocalDateTime.ofInstant(parsedInstant, ZoneId.of("UTC"))
 
         if (parsedTime.isBefore(now) || parsedTime.isAfter(now.plusDays(7)))
             throw BadRequestException(message = "Expires at can only be a maximum of 7 days in the future")
 
         val passwordHash = encryptionService.encode(dto.password)
-        val invite = dto.toEntity(groupId, passwordHash)
-        return groupInviteRepository.save(invite).toResponseDto()
+        val invite = dto.toEntity(groupId, passwordHash, parsedTime)
+        val savedInvite = groupInviteRepository.save(invite)
+        return savedInvite.toResponseDto()
     }
 
     fun getInvitesByGroup(groupId: Int): List<GroupInviteResponse> {
@@ -58,10 +59,12 @@ class GroupInviteService(
         val invite = groupInviteRepository.findById(inviteId)
             .orElseThrow { NotFoundException("Invite not found") }
 
-        val safetyCode = safetyCodeService.createCode(invite)
-
         if (!encryptionService.matches(dto.password, invite.passwordHash)) throw UnauthorizedException("Invalid password")
         validateInvite(invite, dto.token)
+
+        if (invite.expiresAt.isAfter(LocalDateTime.now())) throw BadRequestException("Invite has expired")
+
+        val safetyCode = safetyCodeService.createCode(invite)
 
         val response = restClient.post()
             .uri("$groupServiceUrl/groups/${invite.groupId}/users?token=$safetyCode")
@@ -85,6 +88,6 @@ class GroupInviteService(
     private fun validateInvite(invite: GroupInvite, token: String) {
         if (invite.token != token) throw UnauthorizedException("Invalid token")
         if (!invite.isActive) throw ForbiddenException("Ïnvite has been deactivated or has expired")
-        if (invite.expiresAt.isBefore(LocalDateTime.now())) throw ForbiddenException("Ïnvite has been deactivated or has expired")
+        if (!invite.expiresAt.isBefore(LocalDateTime.now())) throw ForbiddenException("Ïnvite has been deactivated or has expired")
     }
 }
