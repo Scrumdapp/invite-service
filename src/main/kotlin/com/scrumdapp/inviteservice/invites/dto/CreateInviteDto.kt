@@ -14,4 +14,3 @@ data class CreateInviteDto(
     )
     val expiresAt: String?
 )
-
