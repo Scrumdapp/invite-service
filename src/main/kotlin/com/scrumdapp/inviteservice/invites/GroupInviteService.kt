@@ -63,7 +63,7 @@ class GroupInviteService(
             throw BadRequestException("Invite has expired")
         }
 
-        if (!encryptionService.matches(dto.password, invite.passwordHash)) throw UnauthorizedException("Invalid password")
+        if (!encryptionService.matches(dto.password, invite.passwordHash)) throw BadRequestException("Invalid password")
         validateInvite(invite, dto.token)
 
         val safetyCode = safetyCodeService.createCode(invite)
