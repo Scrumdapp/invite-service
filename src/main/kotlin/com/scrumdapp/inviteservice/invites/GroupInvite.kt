@@ -21,10 +21,7 @@ class GroupInvite {
     var groupId: Long = 0
 
     @Column(nullable = false, unique = true)
-    var token: String = UUID.randomUUID().toString()
-
-    @Column(name = "password_hash", nullable = false)
-    var passwordHash: String = ""
+    var token: UUID = UUID.randomUUID()
 
     @Column(name = "created_at", nullable = false)
     var createdAt: LocalDateTime = LocalDateTime.now()

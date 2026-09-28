@@ -6,21 +6,16 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 
-fun CreateInviteDto.toEntity(groupId: Int, passwordHash: String?, expiresAt: LocalDateTime): GroupInvite {
+fun CreateInviteDto.toEntity(groupId: Long, expiresAt: LocalDateTime): GroupInvite {
     return GroupInvite().apply {
-        this.groupId = groupId.toLong()
-        if (passwordHash != null) {
-            this.passwordHash = passwordHash
-        }
+        this.groupId = groupId
         this.expiresAt = expiresAt
     }
 }
 
 fun GroupInvite.toResponseDto(): GroupInviteResponse {
     return GroupInviteResponse(
-        id = id,
-        groupId = groupId,
-        token = token,
+        token = token.toString(),
         expiresAt = "${expiresAt.format(DateTimeFormatter.ISO_DATE_TIME)}Z",
         isActive = isActive
     )

@@ -1,95 +1,91 @@
 package com.scrumdapp.inviteservice.invites
 
 import com.scrumdapp.inviteservice.exceptions.BadRequestException
-import com.scrumdapp.inviteservice.exceptions.ForbiddenException
 import com.scrumdapp.inviteservice.exceptions.NotFoundException
-import com.scrumdapp.inviteservice.exceptions.UnauthorizedException
-import com.scrumdapp.inviteservice.invites.dto.AcceptInviteDto
 import com.scrumdapp.inviteservice.invites.dto.CreateInviteDto
 import com.scrumdapp.inviteservice.invites.dto.GroupInviteResponse
-import com.scrumdapp.inviteservice.encryption.EncryptionService
-import com.scrumdapp.inviteservice.exceptions.ServerException
+import com.scrumdapp.inviteservice.groups.GroupRequestService
 import com.scrumdapp.inviteservice.safetycodes.SafetyCodeService
-import com.scrumdapp.passportplugin.jwt.PassportContent
-import org.springframework.beans.factory.annotation.Value
-import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
-import org.springframework.web.client.RestClient
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
+import java.util.UUID
 
 @Service
 class GroupInviteService(
     private val groupInviteRepository: GroupInviteRepository,
-    private val encryptionService: EncryptionService,
+    private val groupRequestService: GroupRequestService,
     private val safetyCodeService: SafetyCodeService
 ) {
-    private val restClient = RestClient.create()
 
-    @Value("\${group.service.url}")
-    private lateinit var groupServiceUrl: String
+    fun getById(uuid: UUID): GroupInviteResponse {
 
-    fun createInvite(groupId: Int, dto: CreateInviteDto): GroupInviteResponse {
-        val now = LocalDateTime.now()
-        val parsedInstant = Instant.parse(dto.expiresAt)
-        val parsedTime = LocalDateTime.ofInstant(parsedInstant, ZoneId.of("UTC"))
+        val invite = groupInviteRepository.findFirstByToken(uuid)
+            ?: throw NotFoundException(message = "Invite not found")
 
-        if (parsedTime.isBefore(now) || parsedTime.isAfter(now.plusDays(7)))
-            throw BadRequestException(message = "Expires at can only be a maximum of 7 days in the future")
+        checkValidity(invite)
 
-        val passwordHash = encryptionService.encode(dto.password)
-        val invite = dto.toEntity(groupId, passwordHash, parsedTime)
-        val savedInvite = groupInviteRepository.save(invite)
-        return savedInvite.toResponseDto()
-    }
-
-    fun getInvitesByGroup(groupId: Int): List<GroupInviteResponse> {
-        return groupInviteRepository.findAllByGroupId(groupId).map { it.toResponseDto() }
-    }
-
-    fun getInviteById(inviteId: Int, token: String): GroupInviteResponse {
-        val invite = groupInviteRepository.findById(inviteId)
-            .orElseThrow { NotFoundException("Invite not found") }
-        validateInvite(invite, token)
         return invite.toResponseDto()
     }
 
-    fun acceptInvite(inviteId: Int, dto: AcceptInviteDto, authorization: String, userId: Long): Boolean {
-        val invite = groupInviteRepository.findById(inviteId)
-            .orElseThrow { NotFoundException("Invite not found") }
-
-        if (invite.expiresAt.isBefore(LocalDateTime.now())) {
-            throw BadRequestException("Invite has expired")
-        }
-
-        if (!encryptionService.matches(dto.password, invite.passwordHash)) throw BadRequestException("Invalid password")
-        validateInvite(invite, dto.token)
-
-        val safetyCode = safetyCodeService.createCode(invite)
-
-        val response = restClient.post()
-            .uri("$groupServiceUrl/groups/${invite.groupId}/users?token=$safetyCode")
-            .contentType(MediaType.APPLICATION_JSON)
-            .header("Authorization", authorization)
-            .body(mapOf("user_id" to userId))
-            .retrieve()
-            .onStatus({ it.is4xxClientError }) { _, response ->
-                throw ServerException("Something went wrong adding user to group")
-            }
-            .toBodilessEntity()
-        return true
+    fun getByGroup(groupId: Long): List<GroupInviteResponse> {
+        return groupInviteRepository.findAllByGroupId(groupId)
+            .map { it.toResponseDto() }
     }
 
-    fun delete(inviteId: Int, passport: PassportContent) {
-        val invite = groupInviteRepository.findById(inviteId)
-            .orElseThrow { NotFoundException("Invite not found") }
+    fun create(dto: CreateInviteDto): GroupInviteResponse {
+
+        var expiryTime = LocalDateTime.now(ZoneId.of("UTC")).plusHours(12)
+        if (dto.expiresAt != null) {
+            val parsedTime = parseToDateTime(dto.expiresAt)
+            val curTime = LocalDateTime.now()
+            if (parsedTime.isBefore(curTime) || parsedTime.isAfter(curTime.plusDays(7))) {
+                throw BadRequestException(message = "Expiry date must be in the future and at most 7 days into the future")
+            }
+
+            expiryTime = parsedTime
+        }
+
+        return groupInviteRepository.save(dto.toEntity(dto.groupId, expiryTime)).toResponseDto()
+    }
+
+    fun delete(uuid: UUID, userGroups: List<Int>) {
+
+        val invite = groupInviteRepository.findFirstByToken(uuid)
+            ?: throw NotFoundException(message = "Invite not found")
+
+        if (!userGroups.contains(invite.groupId.toInt())) {
+            throw NotFoundException("Invite Not Found")
+        }
+
         groupInviteRepository.delete(invite)
     }
 
-    private fun validateInvite(invite: GroupInvite, token: String) {
-        if (invite.token != token) throw UnauthorizedException("Invalid token")
-        if (!invite.isActive) throw ForbiddenException("Ïnvite has been deactivated or has expired")
-        if (invite.expiresAt.isBefore(LocalDateTime.now())) throw ForbiddenException("Ïnvite has been deactivated or has expired")
+    fun acceptInvite(uuid: UUID, userId: Long, userGroups: List<Int>) {
+        val invite = groupInviteRepository.findFirstByToken(uuid)
+            ?: throw NotFoundException(message = "Invite not found")
+
+        if (userGroups.contains(invite.groupId.toInt())) {
+            throw BadRequestException("User is already part of group")
+        }
+        checkValidity(invite)
+
+        val safetyCode = safetyCodeService.createCode(invite)
+        groupRequestService.joinGroup(safetyCode, invite.groupId, userId)
+    }
+
+
+    private fun checkValidity(invite: GroupInvite) {
+        if (invite.expiresAt.isBefore(LocalDateTime.now())) {
+            throw NotFoundException(message = "Invite has either expired or could not be found")
+        } else if (!invite.isActive) {
+            throw NotFoundException(message = "Invite has either expired or could not be found")
+        }
+    }
+
+    private fun parseToDateTime(time: String): LocalDateTime {
+        val instantTime = Instant.parse(time)
+        return LocalDateTime.ofInstant(instantTime, ZoneId.of("UTC"))
     }
 }

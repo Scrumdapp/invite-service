@@ -24,12 +24,13 @@ class SecurityConfig(
             .usePassport(passportAuthFilter)
             .authorizeHttpRequests { auth ->
                 auth
-                    .requestMatchers(HttpMethod.GET, "/invites/{inviteId}").hasAnyAuthority("STUDENT", "COACH")
-                    .requestMatchers(HttpMethod.POST, "/invites/{inviteId}/accept").hasAnyAuthority("STUDENT","COACH")
                     .requestMatchers(HttpMethod.GET, "/invites").hasAnyAuthority("COACH")
                     .requestMatchers(HttpMethod.POST, "/invites").hasAnyAuthority("COACH")
+                    .requestMatchers(HttpMethod.GET, "/invites/{inviteId}").hasAnyAuthority("STUDENT", "COACH")
+                    .requestMatchers(HttpMethod.POST, "/invites/{inviteId}/accept").hasAnyAuthority("STUDENT","COACH")
                     .requestMatchers(HttpMethod.DELETE, "/invites/{inviteId}").hasAnyAuthority("COACH")
                     .requestMatchers(HttpMethod.GET, "/invites/safety").hasAnyAuthority("STUDENT", "COACH")
+                    .requestMatchers("/swagger-ui/**", "/v3/api-docs*/**").permitAll()
             }
             .exceptionHandling { ex -> ex
                 .authenticationEntryPoint(CustomAuthEntryPointHandler())

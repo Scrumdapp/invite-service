@@ -1,12 +1,14 @@
 package com.scrumdapp.inviteservice.invites
 
 import com.scrumdapp.inviteservice.exceptions.ForbiddenException
-import com.scrumdapp.inviteservice.invites.dto.AcceptInviteDto
+import com.scrumdapp.inviteservice.exceptions.UnauthorizedException
 import com.scrumdapp.inviteservice.invites.dto.CreateInviteDto
 import com.scrumdapp.inviteservice.invites.dto.GroupInviteResponse
 import com.scrumdapp.passportplugin.annotations.Passport
 import com.scrumdapp.passportplugin.jwt.PassportContent
 import jakarta.validation.Valid
+import org.apache.coyote.Response
+import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -16,61 +18,67 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
+import java.util.UUID
 
 @RestController
 @RequestMapping("/invites")
 class InviteController(
     private val inviteService: GroupInviteService
 ) {
+
     @GetMapping
-    fun getByGroup(
-        @RequestParam("group") groupId: Int,
+    fun getByGroupId(
+        @RequestParam(required = true) groupId: Long,
         @Passport passport: PassportContent
     ): List<GroupInviteResponse> {
-        if (passport.userGroups == null || passport.userGroups?.contains(groupId) == false) throw ForbiddenException(
-            message = "You don't have access to this group"
-        )
-        return inviteService.getInvitesByGroup(groupId)
+        if (passport.userGroups?.contains(groupId.toInt()) == false) {
+            throw ForbiddenException(message = "You don't have permission to access this group")
+        }
+
+        return inviteService.getByGroup(groupId)
+    }
+
+    @GetMapping("/{id}")
+    fun getById(
+        @PathVariable id: UUID
+    ): GroupInviteResponse {
+        return inviteService.getById(id)
     }
 
     @PostMapping
     fun create(
-        @RequestParam("group") groupId: Int,
         @Passport passport: PassportContent,
-        @RequestBody @Valid dto: CreateInviteDto,
+        @Valid @RequestBody dto: CreateInviteDto
     ): GroupInviteResponse {
-        if (passport.userGroups == null || passport.userGroups?.contains(groupId) == false) throw ForbiddenException(
-            message = "You don't have access to this group"
-        )
-        return inviteService.createInvite(groupId, dto)
+
+        if (passport.userGroups.isNullOrEmpty() || !passport.userGroups?.contains(dto.groupId.toInt())!!) {
+            throw ForbiddenException(message = "You don't have permission to access this group")
+        }
+
+        return inviteService.create(dto)
     }
 
-    @GetMapping("/{inviteId}")
-    fun getById(
-        @PathVariable inviteId: Int,
-        @RequestParam token: String
-    ): ResponseEntity<GroupInviteResponse> {
-        return ResponseEntity.ok(inviteService.getInviteById(inviteId, token))
-    }
-
-    @PostMapping("/{inviteId}/accept")
+    @PostMapping("/{id}/accept")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     fun accept(
-        @PathVariable inviteId: Int,
-        @RequestBody @Valid dto: AcceptInviteDto,
+        @PathVariable id: UUID,
         @Passport passport: PassportContent,
-        @RequestHeader("Authorization") authorization: String
-    ): ResponseEntity<Void> {
-        inviteService.acceptInvite(inviteId, dto, authorization, passport.userId.toLong())
-        return ResponseEntity.noContent().build()
+    ) {
+        inviteService.acceptInvite(id, passport.userId.toLong(), passport.userGroups!!)
     }
 
-    @DeleteMapping("/{inviteId}")
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     fun delete(
-        @PathVariable inviteId: Int,
-        @Passport passport: PassportContent
-    ): ResponseEntity<Void> {
-        inviteService.delete(inviteId, passport)
-        return ResponseEntity.noContent().build()
+        @PathVariable id: UUID,
+        @Passport passport: PassportContent,
+    ) {
+
+        if (passport.userGroups.isNullOrEmpty()) {
+            throw UnauthorizedException(message = "Could not retrieve user groups")
+        }
+        inviteService.delete(id, passport.userGroups!!)
     }
 }
