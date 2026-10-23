@@ -10,6 +10,8 @@ import com.scrumdapp.inviteservice.invites.dto.GroupInviteResponse
 import com.scrumdapp.inviteservice.encryption.EncryptionService
 import com.scrumdapp.inviteservice.exceptions.ServerException
 import com.scrumdapp.inviteservice.safetycodes.SafetyCodeService
+import com.scrumdapp.inviteservice.servicerequests.GatewayRequestService
+import com.scrumdapp.inviteservice.servicerequests.GroupRequestService
 import com.scrumdapp.passportplugin.jwt.PassportContent
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.MediaType
@@ -23,14 +25,13 @@ import java.time.ZoneId
 class GroupInviteService(
     private val groupInviteRepository: GroupInviteRepository,
     private val encryptionService: EncryptionService,
-    private val safetyCodeService: SafetyCodeService
+    private val safetyCodeService: SafetyCodeService,
+    private val groupRequestService: GroupRequestService,
+    private val gatewayRequestService: GatewayRequestService,
 ) {
     private val restClient = RestClient.create()
 
-    @Value("\${group.service.url}")
-    private lateinit var groupServiceUrl: String
-
-    fun createInvite(groupId: Int, dto: CreateInviteDto): GroupInviteResponse {
+    fun createInvite(groupId: Long, dto: CreateInviteDto): GroupInviteResponse {
         val now = LocalDateTime.now()
         val parsedInstant = Instant.parse(dto.expiresAt)
         val parsedTime = LocalDateTime.ofInstant(parsedInstant, ZoneId.of("UTC"))
@@ -55,7 +56,7 @@ class GroupInviteService(
         return invite.toResponseDto()
     }
 
-    fun acceptInvite(inviteId: Int, dto: AcceptInviteDto, authorization: String, userId: Long): Boolean {
+    fun acceptInvite(inviteId: Int, dto: AcceptInviteDto, authorization: String, userId: Long) {
         val invite = groupInviteRepository.findById(inviteId)
             .orElseThrow { NotFoundException("Invite not found") }
 
@@ -68,17 +69,9 @@ class GroupInviteService(
 
         val safetyCode = safetyCodeService.createCode(invite)
 
-        val response = restClient.post()
-            .uri("$groupServiceUrl/groups/${invite.groupId}/users?token=$safetyCode")
-            .contentType(MediaType.APPLICATION_JSON)
-            .header("Authorization", authorization)
-            .body(mapOf("user_id" to userId))
-            .retrieve()
-            .onStatus({ it.is4xxClientError }) { _, response ->
-                throw ServerException("Something went wrong adding user to group")
-            }
-            .toBodilessEntity()
-        return true
+        groupRequestService.acceptInvite(invite.groupId, userId, safetyCode)
+
+        gatewayRequestService.invalidatePassport()
     }
 
     fun delete(inviteId: Int, passport: PassportContent) {

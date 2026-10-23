@@ -6,9 +6,9 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 
-fun CreateInviteDto.toEntity(groupId: Int, passwordHash: String?, expiresAt: LocalDateTime): GroupInvite {
+fun CreateInviteDto.toEntity(groupId: Long, passwordHash: String?, expiresAt: LocalDateTime): GroupInvite {
     return GroupInvite().apply {
-        this.groupId = groupId.toLong()
+        this.groupId = groupId
         if (passwordHash != null) {
             this.passwordHash = passwordHash
         }

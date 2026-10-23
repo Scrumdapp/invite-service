@@ -24,7 +24,7 @@ repositories {
 }
 
 dependencies {
-    implementation("com.scrumdapp:passport-plugin:0.0.1")
+    implementation("com.scrumdapp:passport-plugin:0.0.2")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-validation")

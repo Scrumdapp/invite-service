@@ -20,3 +20,6 @@ class UnauthorizedException(message: String = "Unauthorised") :
 
 class ServerException(message: String = "Internal server error") :
     AppException(message, HttpStatus.INTERNAL_SERVER_ERROR)
+
+class DownStreamException(message: String = "Downstream service unavailable") :
+    AppException(message, HttpStatus.SERVICE_UNAVAILABLE)

@@ -4,9 +4,11 @@ import com.scrumdapp.inviteservice.exceptions.ForbiddenException
 import com.scrumdapp.inviteservice.invites.dto.AcceptInviteDto
 import com.scrumdapp.inviteservice.invites.dto.CreateInviteDto
 import com.scrumdapp.inviteservice.invites.dto.GroupInviteResponse
-import com.scrumdapp.passportplugin.annotations.Passport
+import com.scrumdapp.passportplugin.annotations.groupAccess.IsInGroup
+import com.scrumdapp.passportplugin.annotations.passportController.Passport
 import com.scrumdapp.passportplugin.jwt.PassportContent
 import jakarta.validation.Valid
+import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
@@ -24,25 +27,19 @@ class InviteController(
     private val inviteService: GroupInviteService
 ) {
     @GetMapping
+    @IsInGroup
     fun getByGroup(
         @RequestParam("group") groupId: Int,
-        @Passport passport: PassportContent
     ): List<GroupInviteResponse> {
-        if (passport.userGroups == null || passport.userGroups?.contains(groupId) == false) throw ForbiddenException(
-            message = "You don't have access to this group"
-        )
         return inviteService.getInvitesByGroup(groupId)
     }
 
     @PostMapping
+    @IsInGroup
     fun create(
-        @RequestParam("group") groupId: Int,
-        @Passport passport: PassportContent,
+        @RequestParam("group") groupId: Long,
         @RequestBody @Valid dto: CreateInviteDto,
     ): GroupInviteResponse {
-        if (passport.userGroups == null || passport.userGroups?.contains(groupId) == false) throw ForbiddenException(
-            message = "You don't have access to this group"
-        )
         return inviteService.createInvite(groupId, dto)
     }
 
@@ -55,22 +52,23 @@ class InviteController(
     }
 
     @PostMapping("/{inviteId}/accept")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     fun accept(
         @PathVariable inviteId: Int,
         @RequestBody @Valid dto: AcceptInviteDto,
         @Passport passport: PassportContent,
         @RequestHeader("Authorization") authorization: String
-    ): ResponseEntity<Void> {
-        inviteService.acceptInvite(inviteId, dto, authorization, passport.userId.toLong())
-        return ResponseEntity.noContent().build()
+    ) {
+        inviteService.acceptInvite(inviteId, dto, authorization, passport.userId)
     }
 
     @DeleteMapping("/{inviteId}")
+    @IsInGroup
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     fun delete(
         @PathVariable inviteId: Int,
         @Passport passport: PassportContent
-    ): ResponseEntity<Void> {
+    ) {
         inviteService.delete(inviteId, passport)
-        return ResponseEntity.noContent().build()
     }
 }
