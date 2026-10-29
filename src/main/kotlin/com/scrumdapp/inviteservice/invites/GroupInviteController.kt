@@ -4,7 +4,6 @@ import com.scrumdapp.inviteservice.exceptions.ForbiddenException
 import com.scrumdapp.inviteservice.invites.dto.AcceptInviteDto
 import com.scrumdapp.inviteservice.invites.dto.CreateInviteDto
 import com.scrumdapp.inviteservice.invites.dto.GroupInviteResponse
-import com.scrumdapp.passportplugin.annotations.groupAccess.IsInGroup
 import com.scrumdapp.passportplugin.annotations.passportController.Passport
 import com.scrumdapp.passportplugin.jwt.PassportContent
 import jakarta.validation.Valid
@@ -27,19 +26,26 @@ class InviteController(
     private val inviteService: GroupInviteService
 ) {
     @GetMapping
-    @IsInGroup
     fun getByGroup(
-        @RequestParam("group") groupId: Int,
+        @RequestParam("group") groupId: Long,
+        @Passport passport: PassportContent
     ): List<GroupInviteResponse> {
+        if (!passport.userGroups.contains(groupId)) throw ForbiddenException(
+            message = "You don't have access to this group"
+        )
         return inviteService.getInvitesByGroup(groupId)
     }
 
     @PostMapping
-    @IsInGroup
     fun create(
         @RequestParam("group") groupId: Long,
+        @Passport passport: PassportContent,
         @RequestBody @Valid dto: CreateInviteDto,
     ): GroupInviteResponse {
+        if (!passport.userGroups.contains(groupId)) throw ForbiddenException(
+            message = "You don't have access to this group"
+        )
+
         return inviteService.createInvite(groupId, dto)
     }
 
@@ -63,12 +69,11 @@ class InviteController(
     }
 
     @DeleteMapping("/{inviteId}")
-    @IsInGroup
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun delete(
         @PathVariable inviteId: Int,
         @Passport passport: PassportContent
     ) {
-        inviteService.delete(inviteId, passport)
+        inviteService.deleteInvite(inviteId, passport)
     }
 }

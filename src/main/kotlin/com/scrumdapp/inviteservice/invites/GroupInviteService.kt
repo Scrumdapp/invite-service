@@ -8,15 +8,11 @@ import com.scrumdapp.inviteservice.invites.dto.AcceptInviteDto
 import com.scrumdapp.inviteservice.invites.dto.CreateInviteDto
 import com.scrumdapp.inviteservice.invites.dto.GroupInviteResponse
 import com.scrumdapp.inviteservice.encryption.EncryptionService
-import com.scrumdapp.inviteservice.exceptions.ServerException
 import com.scrumdapp.inviteservice.safetycodes.SafetyCodeService
-import com.scrumdapp.inviteservice.servicerequests.GatewayRequestService
-import com.scrumdapp.inviteservice.servicerequests.GroupRequestService
+import com.scrumdapp.inviteservice.servicerequests.gateway.GatewayRequestService
+import com.scrumdapp.inviteservice.servicerequests.groups.GroupRequestService
 import com.scrumdapp.passportplugin.jwt.PassportContent
-import org.springframework.beans.factory.annotation.Value
-import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
-import org.springframework.web.client.RestClient
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -29,12 +25,15 @@ class GroupInviteService(
     private val groupRequestService: GroupRequestService,
     private val gatewayRequestService: GatewayRequestService,
 ) {
-    private val restClient = RestClient.create()
 
     fun createInvite(groupId: Long, dto: CreateInviteDto): GroupInviteResponse {
         val now = LocalDateTime.now()
-        val parsedInstant = Instant.parse(dto.expiresAt)
-        val parsedTime = LocalDateTime.ofInstant(parsedInstant, ZoneId.of("UTC"))
+        var parsedTime = LocalDateTime.now(ZoneId.of("UTC")).plusDays(1)
+
+        if (dto.expiresAt != null) {
+            val parsedInstant = Instant.parse(dto.expiresAt)
+            parsedTime = LocalDateTime.ofInstant(parsedInstant, ZoneId.of("UTC"))
+        }
 
         if (parsedTime.isBefore(now) || parsedTime.isAfter(now.plusDays(7)))
             throw BadRequestException(message = "Expires at can only be a maximum of 7 days in the future")
@@ -45,8 +44,8 @@ class GroupInviteService(
         return savedInvite.toResponseDto()
     }
 
-    fun getInvitesByGroup(groupId: Int): List<GroupInviteResponse> {
-        return groupInviteRepository.findAllByGroupId(groupId).map { it.toResponseDto() }
+    fun getInvitesByGroup(groupId: Long): List<GroupInviteResponse> {
+        return groupInviteRepository.findAllByGroupId(groupId.toInt()).map { it.toResponseDto() }
     }
 
     fun getInviteById(inviteId: Int, token: String): GroupInviteResponse {
@@ -70,13 +69,16 @@ class GroupInviteService(
         val safetyCode = safetyCodeService.createCode(invite)
 
         groupRequestService.acceptInvite(invite.groupId, userId, safetyCode)
-
         gatewayRequestService.invalidatePassport()
     }
 
-    fun delete(inviteId: Int, passport: PassportContent) {
+    fun deleteInvite(inviteId: Int, passport: PassportContent) {
         val invite = groupInviteRepository.findById(inviteId)
             .orElseThrow { NotFoundException("Invite not found") }
+
+        if (!passport.userGroups.contains(invite.groupId)) throw ForbiddenException(
+            message = "You don't have access to this group"
+        )
         groupInviteRepository.delete(invite)
     }
 
