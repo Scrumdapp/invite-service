@@ -1,12 +1,12 @@
-package com.scrumdapp.inviteservice.invites
+package com.scrumdapp.inviteservice.groupinvites
 
 import com.scrumdapp.inviteservice.exceptions.BadRequestException
 import com.scrumdapp.inviteservice.exceptions.ForbiddenException
 import com.scrumdapp.inviteservice.exceptions.NotFoundException
 import com.scrumdapp.inviteservice.exceptions.UnauthorizedException
-import com.scrumdapp.inviteservice.invites.dto.AcceptInviteDto
-import com.scrumdapp.inviteservice.invites.dto.CreateInviteDto
-import com.scrumdapp.inviteservice.invites.dto.GroupInviteResponse
+import com.scrumdapp.inviteservice.groupinvites.dto.AcceptInviteDto
+import com.scrumdapp.inviteservice.groupinvites.dto.CreateInviteDto
+import com.scrumdapp.inviteservice.groupinvites.dto.GroupInviteResponse
 import com.scrumdapp.inviteservice.encryption.EncryptionService
 import com.scrumdapp.inviteservice.exceptions.ServerException
 import com.scrumdapp.inviteservice.safetycodes.SafetyCodeService

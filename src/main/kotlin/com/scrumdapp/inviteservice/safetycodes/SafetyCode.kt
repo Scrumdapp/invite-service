@@ -1,6 +1,6 @@
 package com.scrumdapp.inviteservice.safetycodes
 
-import com.scrumdapp.inviteservice.invites.GroupInvite
+import com.scrumdapp.inviteservice.groupinvites.GroupInvite
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue

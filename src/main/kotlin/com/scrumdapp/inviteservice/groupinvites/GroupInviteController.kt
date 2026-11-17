@@ -1,9 +1,9 @@
-package com.scrumdapp.inviteservice.invites
+package com.scrumdapp.inviteservice.groupinvites
 
 import com.scrumdapp.inviteservice.exceptions.ForbiddenException
-import com.scrumdapp.inviteservice.invites.dto.AcceptInviteDto
-import com.scrumdapp.inviteservice.invites.dto.CreateInviteDto
-import com.scrumdapp.inviteservice.invites.dto.GroupInviteResponse
+import com.scrumdapp.inviteservice.groupinvites.dto.AcceptInviteDto
+import com.scrumdapp.inviteservice.groupinvites.dto.CreateInviteDto
+import com.scrumdapp.inviteservice.groupinvites.dto.GroupInviteResponse
 import com.scrumdapp.passportplugin.annotations.Passport
 import com.scrumdapp.passportplugin.jwt.PassportContent
 import jakarta.validation.Valid

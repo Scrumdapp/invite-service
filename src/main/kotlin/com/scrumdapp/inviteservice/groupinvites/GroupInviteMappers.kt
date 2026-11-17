@@ -1,7 +1,7 @@
-package com.scrumdapp.inviteservice.invites
+package com.scrumdapp.inviteservice.groupinvites
 
-import com.scrumdapp.inviteservice.invites.dto.CreateInviteDto
-import com.scrumdapp.inviteservice.invites.dto.GroupInviteResponse
+import com.scrumdapp.inviteservice.groupinvites.dto.CreateInviteDto
+import com.scrumdapp.inviteservice.groupinvites.dto.GroupInviteResponse
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 

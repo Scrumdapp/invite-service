@@ -1,4 +1,4 @@
-package com.scrumdapp.inviteservice.invites
+package com.scrumdapp.inviteservice.groupinvites
 
 import jakarta.persistence.Column
 import jakarta.persistence.Entity

@@ -1,4 +1,4 @@
-package com.scrumdapp.inviteservice.invites.dto
+package com.scrumdapp.inviteservice.groupinvites.dto
 
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Pattern

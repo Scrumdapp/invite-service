@@ -1,8 +1,6 @@
 package com.scrumdapp.inviteservice.safetycodes
 
-import com.scrumdapp.inviteservice.invites.GroupInvite
-import com.scrumdapp.inviteservice.safetycodes.SafetyCode
-import com.scrumdapp.inviteservice.safetycodes.SafetyCodeRepository
+import com.scrumdapp.inviteservice.groupinvites.GroupInvite
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime

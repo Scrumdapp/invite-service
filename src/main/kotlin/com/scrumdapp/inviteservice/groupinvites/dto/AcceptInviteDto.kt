@@ -1,4 +1,4 @@
-package com.scrumdapp.inviteservice.invites.dto
+package com.scrumdapp.inviteservice.groupinvites.dto
 
 data class AcceptInviteDto(
     val token: String,
