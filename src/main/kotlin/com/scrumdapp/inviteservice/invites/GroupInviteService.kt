@@ -30,7 +30,7 @@ class GroupInviteService(
     @Value("\${group.service.url}")
     private lateinit var groupServiceUrl: String
 
-    fun createInvite(groupId: Int, dto: CreateInviteDto): GroupInviteResponse {
+    fun createInvite(groupId: Long, dto: CreateInviteDto): GroupInviteResponse {
         val now = LocalDateTime.now()
         val parsedInstant = Instant.parse(dto.expiresAt)
         val parsedTime = LocalDateTime.ofInstant(parsedInstant, ZoneId.of("UTC"))
@@ -44,7 +44,7 @@ class GroupInviteService(
         return savedInvite.toResponseDto()
     }
 
-    fun getInvitesByGroup(groupId: Int): List<GroupInviteResponse> {
+    fun getInvitesByGroup(groupId: Long): List<GroupInviteResponse> {
         return groupInviteRepository.findAllByGroupId(groupId).map { it.toResponseDto() }
     }
 
